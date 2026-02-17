@@ -104,6 +104,7 @@ with col_left:
     sns.barplot(x="weathersit", y="cnt", data=weather_impact, palette="viridis", ax=ax_w)
     ax_w.set_title("Rata-rata Sewa per Kondisi Cuaca")
     ax_w.set_xlabel("Kondisi Cuaca (1: Cerah, 2: Mendung, 3: Hujan/Salju, 4: Ekstrem)")
+    ax_w.set_ylabel("Rata-Rata Jumlah Sewa")
     st.pyplot(fig_w)
 with col_right:
     bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
