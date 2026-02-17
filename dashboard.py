@@ -43,24 +43,26 @@ with st.sidebar:
     st.info("💡 **Catatan:** Dataset ini adalah data historis tahun **2011 - 2012**.")
     st.markdown("---")
     
-    min_date = all_df["dteday"].min()
-    max_date = all_df["dteday"].max()
-    
-    date_range = st.date_input(
-        label='Rentang Waktu Analisis',
-        min_value=min_date,
-        max_value=max_date,
-        value=[min_date, max_date],
-        format="YYYY/MM/DD"
+   min_date = all_df["dteday"].min().date()
+   max_date = all_df["dteday"].max().date()
+
+   date_range = st.date_input(
+   label='Rentang Waktu Analisis',
+   min_value=min_date,
+   max_value=max_date,
+   value=[min_date, max_date],
+   format="YYYY/MM/DD"
     )
 
-if isinstance(date_range, tuple):
-    start_date, end_date = date_range
-else:
-    start_date = end_date = date_range
-    
-main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
-                (all_df["dteday"] <= pd.to_datetime(end_date))]
+   if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+       start_date, end_date = date_range
+   elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
+       start_date = end_date = date_range[0]
+   else:
+       start_date = end_date = date_range
+
+   main_df = all_df[(all_df["dteday"].dt.date >= start_date) & 
+                 (all_df["dteday"].dt.date <= end_date)]
 
 # HEADER 
 st.title("Bike Sharing Analytics Dashboard")
