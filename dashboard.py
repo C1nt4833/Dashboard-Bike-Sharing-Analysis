@@ -25,13 +25,13 @@ all_df = load_data()
 #Analisis Lanjutan
 def hour_grouping(hour):
     if 5 <= hour < 12:
-        return "Pagi"
+        return "Pagi (Morning)"
     elif 12 <= hour < 17:
-        return "Siang"
+        return "Siang (Afternoon)"
     elif 17 <= hour < 21:
-        return "Sore"
+        return "Sore (Evening)"
     else:
-        return "Malam"
+        return "Malam (Night)"
         
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
