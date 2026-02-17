@@ -50,7 +50,8 @@ with st.sidebar:
         label='Rentang Waktu Analisis',
         min_value=min_date,
         max_value=max_date,
-        value=[min_date, max_date]
+        value=[min_date, max_date],
+        format="YYYY/MM/DD"
     )
 
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
