@@ -43,8 +43,8 @@ with st.sidebar:
     st.info("💡 **Catatan:** Dataset ini adalah data historis tahun **2011 - 2012**.")
     st.markdown("---")
     
-   min_date = all_df["dteday"].min()
-   max_date = all_df["dteday"].max()
+    min_date = all_df["dteday"].min()
+    max_date = all_df["dteday"].max()
     
     date_range = st.date_input(
         label='Rentang Waktu Analisis',
