@@ -56,9 +56,11 @@ with st.sidebar:
 
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
     start_date, end_date = date_range
+elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
+    start_date = end_date = date_range[0]
 else:
-    start_date = end_date = date_range[0] if isinstance(date_range, (list, tuple)) else date_range
-
+    start_date = end_date = date_range
+    
 main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
                 (all_df["dteday"] <= pd.to_datetime(end_date))]
 
