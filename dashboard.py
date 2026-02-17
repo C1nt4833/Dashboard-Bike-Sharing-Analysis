@@ -64,7 +64,7 @@ main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) &
                 (all_df["dteday"] <= pd.to_datetime(end_date))]
 
 # HEADER 
-st.title("Bike Sharing Analytics Dashboard ✨")
+st.title("Bike Sharing Analytics Dashboard")
 st.markdown(f"Periode Analisis: **{start_date}** hingga **{end_date}**")
 st.markdown("---")
 
@@ -114,7 +114,6 @@ with col_right:
 # ANALISIS LANJUTAN
 
 st.markdown("---")
-st.header("🔍 Analisis Lanjutan (Advanced Analysis)")
 
 # BAGIAN 1: CLUSTERING MANUAL
 st.subheader("Distribusi Penyewaan Berdasarkan Kategori Waktu")
