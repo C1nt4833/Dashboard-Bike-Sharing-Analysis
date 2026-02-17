@@ -18,7 +18,6 @@ st.set_page_config(page_title="Bike Sharing Analysis Dashboard", layout="wide")
 
 @st.cache_data
 def load_data():
-    # Pastikan file ini ada di folder yang sama dengan dashboard.py
     df = pd.read_csv("main_data.csv")
     df['dteday'] = pd.to_datetime(df['dteday'])
     return df
@@ -60,31 +59,29 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     total_rentals = main_df.cnt.sum()
-    st.metric("Total Overall Rentals", value=f"{total_rentals:,}")
+    st.metric("Total Seluruh Penyewaan", value=f"{total_rentals:,}")
 
 with col2:
     total_casual = main_df.casual.sum()
-    st.metric("Total Casual Users", value=f"{total_casual:,}")
+    st.metric("Pengguna Casual (Non-Member)", value=f"{total_casual:,}")
 
 with col3:
     total_registered = main_df.registered.sum()
-    st.metric("Total Registered Users", value=f"{total_registered:,}")
+    st.metric("Pengguna Terdaftar (Member)", value=f"{total_registered:,}")
 
-st.subheader("Hourly Rental Trends (Peak Hours Analysis)")
+st.subheader("Tren Penyewaan pada Jam Sibuk (Hari Kerja)")
 q1_data = main_df[main_df["workingday"] == 1]
 
 if not q1_data.empty:
     q1_analysis = q1_data.groupby("hr")[["casual", "registered"]].mean().reset_index()
 
     fig, ax = plt.subplots(figsize=(16, 8))
-    # Line chart Casual
     sns.lineplot(data=q1_analysis, x="hr", y="casual", marker='o', linewidth=3, color="#90CAF9", label="Casual", ax=ax)
-    # Line chart Registered
-    sns.lineplot(data=q1_analysis, x="hr", y="registered", marker='o', linewidth=3, color="#D3D3D3", label="Registered", ax=ax)
+    sns.lineplot(data=q1_analysis, x="hr", y="registered", marker='o', linewidth=3, color="#D3D3D3", label="Member", ax=ax)
 
-    ax.set_title("Average Rentals on Working Days (Filtered by Date Range)", fontsize=20)
-    ax.set_xlabel("Hour (24-hour scale)")
-    ax.set_ylabel("Average Rentals")
+    ax.set_title("Rata-rata Penyewaan per Jam", fontsize=20)
+    ax.set_xlabel("Jam (00 - 23))")
+    ax.set_ylabel("Rata-rata Jumlah Sepeda")
     ax.set_xticks(range(0, 24))
     ax.legend()
     ax.grid(True, linestyle='--', alpha=0.6)
@@ -93,7 +90,7 @@ else:
     st.warning("Tidak ada data 'Working Day' pada rentang tanggal yang dipilih.")
 
 st.markdown("---")
-st.subheader("Weather & Maintenance Analysis")
+st.subheader("Dampak Cuaca & Frekuensi Cuaca Buruk")
 
 col_left, col_right = st.columns(2)
 
@@ -108,9 +105,9 @@ with col_left:
         palette=["#90CAF9", "#D3D3D3", "#F39C12", "#E74C3C"], 
         ax=ax_w
     )
-    ax_w.set_title("Avg Rentals by Weather Condition", fontsize=15)
-    ax_w.set_xlabel("Weather Condition (1: Clear, 4: Heavy Rain/Snow)")
-    ax_w.set_ylabel("Average Total Rentals")
+    ax_w.set_title("Rata-rata Penyewaan Berdasarkan Cuaca", fontsize=15)
+    ax_w.set_xlabel("Kondisi Cuaca (1: Cerah, 4: Buruk)")
+    ax_w.set_ylabel("Rata-rata total Sewa")
     st.pyplot(fig_w)
 
 with col_right:
@@ -119,9 +116,9 @@ with col_right:
     if not bad_weather.empty:
         fig_b, ax_b = plt.subplots(figsize=(10, 6))
         sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#90CAF9", ax=ax_b)
-        ax_b.set_title("Frequency of Bad Weather per Month", fontsize=15)
-        ax_b.set_xlabel("Month")
-        ax_b.set_ylabel("Number of Bad Weather Events")
+        ax_b.set_title("Frekuensi Cuaca Buruk per Bulan", fontsize=15)
+        ax_b.set_xlabel("Bulan")
+        ax_b.set_ylabel("Jumlah Kejadian Cuaca Buruk")
         st.pyplot(fig_b)
     else:
         st.info("Tidak ada cuaca buruk terdeteksi pada rentang tanggal ini.")
