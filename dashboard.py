@@ -126,7 +126,6 @@ with col_right:
         ax_b.set_title("Frekuensi Cuaca Buruk (Hujan/Salju) per Bulan")
         ax_b.set_xlabel("Bulan")
         ax_b.set_ylabel("Jumlah Kejadian")
-        sns.despine()
         st.pyplot(fig_b)
     else:
         st.info("Tidak ada data cuaca buruk pada periode ini.")
