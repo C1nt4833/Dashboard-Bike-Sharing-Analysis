@@ -132,8 +132,8 @@ st.subheader("Performa Pertumbuhan Tahunan")
 yearly_growth = all_df.groupby('yr').agg({'cnt': 'sum', 'casual': 'sum', 'registered': 'sum'})
 yearly_growth.index = ['2011', '2012']
 
-total_2011 = yearly_growth.loc['2011', 'Total']
-total_2012 = yearly_growth.loc['2012', 'Total']
+total_2011 = yearly_growth.loc['2011', 'cnt']
+total_2012 = yearly_growth.loc['2012', 'cnt']
 growth_pct = ((total_2012 - total_2011) / total_2011) * 100
 
 g_col1, g_col2 = st.columns(2)
