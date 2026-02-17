@@ -13,8 +13,17 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
-# Konfigurasi halaman
 st.set_page_config(page_title="Dashboard Analisis Penyewaan Sepeda", layout="wide")
+
+# LOAD DATA
+@st.cache_data
+def load_data():
+    df = pd.read_csv("main_data.csv")
+    df['dteday'] = pd.to_datetime(df['dteday'])
+    df['time_category'] = df['hr'].apply(hour_grouping)
+    return df
+
+all_df = load_data()
 
 #Analisis Lanjutan
 def hour_grouping(hour):
@@ -27,17 +36,6 @@ def hour_grouping(hour):
     else:
         return "Malam"
 
-# LOAD DATA
-@st.cache_data
-def load_data():
-    df = pd.read_csv("main_data.csv")
-    df['dteday'] = pd.to_datetime(df['dteday'])
-    df['time_category'] = df['hr'].apply(hour_grouping)
-    return df
-
-all_df = load_data()
-
-# SIDEBAR
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>Bike Sharing Analysis</h2>", unsafe_allow_html=True)
@@ -164,7 +162,6 @@ g_col1, g_col2 = st.columns(2)
 
 with g_col1:
     st.write("**Statistik Tahunan (Unit):**")
-    # Menampilkan dataframe dengan format ribuan (comma separated)
     st.dataframe(yearly_growth.style.format("{:,}"), use_container_width=True)
 
 with g_col2:
