@@ -124,16 +124,25 @@ with col_right:
 
 st.markdown("---")
 st.subheader("Distribusi Penyewaan Berdasarkan Kategori Waktu")
-category_analysis = main_df.groupby('time_category').agg({'cnt': 'mean'}).reindex(
-    ['Pagi', 'Siang', 'Sore', 'Malam']
-).reset_index()
+category_analysis = main_df.groupby('time_category').agg({'cnt': 'mean'}).reset_index()
+target_order = ['Pagi', 'Siang', 'Sore', 'Malam']
+category_analysis['time_category'] = pd.Categorical(category_analysis['time_category'], categories=target_order, ordered=True)
+category_analysis = category_analysis.sort_values('time_category')
 
-fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
-sns.barplot(x='time_category', y='cnt', data=category_analysis, palette="Blues_d", ax=ax_cat)
-ax_cat.set_title("Rata-rata Penyewaan Berdasarkan Kelompok Waktu")
-ax_cat.set_xlabel("Waktu")
-ax_cat.set_ylabel("Rata-rata Jumlah Sewa")
-st.pyplot(fig_cat)
+if not category_analysis['cnt'].isnull().all():
+    fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
+    sns.barplot(
+        x='time_category', 
+        y='cnt', 
+        data=category_analysis, 
+        palette="Blues_d", 
+        ax=ax_cat
+    )
+
+    ax_cat.set_title("Rata-rata Penyewaan Berdasarkan Kelompok Waktu")
+    ax_cat.set_xlabel("Waktu")
+    ax_cat.set_ylabel("Rata-rata Jumlah Sewa")
+    st.pyplot(fig_cat)
 
 st.subheader("Performa Pertumbuhan Tahunan")
 yearly_growth = all_df.groupby('yr').agg({
