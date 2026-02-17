@@ -145,20 +145,35 @@ ax_cat.set_ylabel("Rata-rata Jumlah Sewa")
 st.pyplot(fig_cat)
 
 st.subheader("Performa Pertumbuhan Tahunan")
-yearly_growth = all_df.groupby('yr').agg({'cnt': 'sum', 'casual': 'sum', 'registered': 'sum'})
+yearly_growth = all_df.groupby('yr').agg({
+    'cnt': 'sum', 
+    'casual': 'sum', 
+    'registered': 'sum'
+}).rename(columns={
+    'cnt': 'Total Penyewaan',
+    'casual': 'Pengguna Casual',
+    'registered': 'Pengguna Terdaftar'
+})
 yearly_growth.index = ['2011', '2012']
 
-total_2011 = yearly_growth.loc['2011', 'cnt']
-total_2012 = yearly_growth.loc['2012', 'cnt']
+total_2011 = yearly_growth.loc['2011', 'Total Penyewaan']
+total_2012 = yearly_growth.loc['2012', 'Total Penyewaan']
 growth_pct = ((total_2012 - total_2011) / total_2011) * 100
 
 g_col1, g_col2 = st.columns(2)
+
 with g_col1:
-    st.dataframe(yearly_growth.style.format("{:,}"))
+    st.write("**Statistik Tahunan (Unit):**")
+    # Menampilkan dataframe dengan format ribuan (comma separated)
+    st.dataframe(yearly_growth.style.format("{:,}"), use_container_width=True)
+
 with g_col2:
-    st.metric(label="Pertumbuhan Total Penyewaan", 
-              value=f"{total_2012 - total_2011:,}", 
-              delta=f"{growth_pct:.2f}% YoY")
+    st.write("**Indikator Pertumbuhan:**")
+    st.metric(
+        label="Kenaikan Total Penyewaan", 
+        value=f"{total_2012 - total_2011:,}", 
+        delta=f"{growth_pct:.2f}% YoY"
+    )
 
 st.markdown("---")
 st.caption('Copyright (C) 2024 - Bike Sharing Analytics Dashboard')
