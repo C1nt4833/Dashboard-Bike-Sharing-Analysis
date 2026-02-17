@@ -16,36 +16,28 @@ import streamlit as st
 # Konfigurasi halaman
 st.set_page_config(page_title="Dashboard Analisis Penyewaan Sepeda", layout="wide")
 
-# ==========================================
-# FUNGSI PEMBANTU (ANALISIS LANJUTAN)
-# ==========================================
+#Analisis Lanjutan
 def hour_grouping(hour):
     if 5 <= hour < 12:
-        return "Pagi (Morning)"
+        return "Pagi"
     elif 12 <= hour < 17:
-        return "Siang (Afternoon)"
+        return "Siang"
     elif 17 <= hour < 21:
-        return "Sore (Evening)"
+        return "Sore"
     else:
-        return "Malam (Night)"
+        return "Malam"
 
-# ==========================================
 # LOAD DATA
-# ==========================================
 @st.cache_data
 def load_data():
-    # Pastikan file main_data.csv ada di folder yang sama
     df = pd.read_csv("main_data.csv")
     df['dteday'] = pd.to_datetime(df['dteday'])
-    # Menerapkan Clustering Manual (Binning)
     df['time_category'] = df['hr'].apply(hour_grouping)
     return df
 
 all_df = load_data()
 
-# ==========================================
 # SIDEBAR
-# ==========================================
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>Bike Sharing Analysis</h2>", unsafe_allow_html=True)
@@ -56,7 +48,6 @@ with st.sidebar:
     min_date = all_df["dteday"].min()
     max_date = all_df["dteday"].max()
     
-    # --- PERBAIKAN LOGIKA TANGGAL ---
     date_range = st.date_input(
         label='Rentang Waktu Analisis',
         min_value=min_date,
@@ -64,20 +55,15 @@ with st.sidebar:
         value=[min_date, max_date]
     )
 
-# Menjamin start_date dan end_date selalu ada (Fix NameError)
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
     start_date, end_date = date_range
 else:
-    # Jika user baru klik 1 tanggal, gunakan tanggal itu untuk keduanya sementara
     start_date = end_date = date_range[0] if isinstance(date_range, (list, tuple)) else date_range
 
-# Filter Data Utama
 main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
                 (all_df["dteday"] <= pd.to_datetime(end_date))]
 
-# ==========================================
-# HEADER & METRIK UTAMA
-# ==========================================
+# HEADER 
 st.title("Bike Sharing Analytics Dashboard ✨")
 st.markdown(f"Periode Analisis: **{start_date}** hingga **{end_date}**")
 st.markdown("---")
@@ -90,10 +76,10 @@ with col2:
 with col3:
     st.metric("Pengguna Terdaftar", value=f"{main_df.registered.sum():,}")
 
-# ==========================================
+
 # VISUALISASI PERTANYAAN BISNIS
-# ==========================================
-st.subheader("1. Tren Penyewaan pada Jam Sibuk (Hari Kerja)")
+
+st.subheader("Tren Penyewaan pada Jam Sibuk (Hari Kerja)")
 q1_data = main_df[main_df["workingday"] == 1]
 if not q1_data.empty:
     q1_analysis = q1_data.groupby("hr")[["casual", "registered"]].mean().reset_index()
@@ -107,13 +93,13 @@ else:
     st.warning("Tidak ada data 'Hari Kerja' pada rentang tanggal ini.")
 
 st.markdown("---")
-st.subheader("2. Dampak Cuaca & Frekuensi Cuaca Buruk")
+st.subheader("Analisis Dampak Kondisi Cuaca")
 col_left, col_right = st.columns(2)
 with col_left:
     weather_impact = main_df.groupby("weathersit")["cnt"].mean().reset_index()
     fig_w, ax_w = plt.subplots(figsize=(10, 6))
     sns.barplot(x="weathersit", y="cnt", data=weather_impact, palette="viridis", ax=ax_w)
-    ax_w.set_title("Rata-rata Penyewaan Berdasarkan Cuaca")
+    ax_w.set_title("Rata-rata Sewa per Kondisi Cuaca")
     st.pyplot(fig_w)
 with col_right:
     bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
@@ -122,17 +108,18 @@ with col_right:
         sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#e74c3c", ax=ax_b)
         ax_b.set_title("Frekuensi Cuaca Buruk per Bulan")
         st.pyplot(fig_b)
+    else:
+        st.info("Tidak ada data cuaca buruk pada periode ini.")
 
-# ==========================================
 # ANALISIS LANJUTAN
-# ==========================================
+
 st.markdown("---")
 st.header("🔍 Analisis Lanjutan (Advanced Analysis)")
 
 # BAGIAN 1: CLUSTERING MANUAL
-st.subheader("A. Clustering Manual: Distribusi per Kategori Waktu")
+st.subheader("Distribusi Penyewaan Berdasarkan Kategori Waktu")
 category_analysis = main_df.groupby('time_category').agg({'cnt': 'mean'}).reindex(
-    ['Pagi (Morning)', 'Siang (Afternoon)', 'Sore (Evening)', 'Malam (Night)']
+    ['Pagi', 'Siang', 'Sore', 'Malam']
 ).reset_index()
 
 fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
@@ -141,12 +128,12 @@ ax_cat.set_title("Rata-rata Penyewaan Berdasarkan Kelompok Waktu")
 st.pyplot(fig_cat)
 
 # BAGIAN 2: GROWTH ANALYSIS
-st.subheader("B. Analisis Pertumbuhan (Growth Analysis) 2011 vs 2012")
+st.subheader("Performa Pertumbuhan Tahunan")
 yearly_growth = all_df.groupby('yr').agg({'cnt': 'sum', 'casual': 'sum', 'registered': 'sum'})
 yearly_growth.index = ['2011', '2012']
 
-total_2011 = yearly_growth.loc['2011', 'cnt']
-total_2012 = yearly_growth.loc['2012', 'cnt']
+total_2011 = yearly_growth.loc['2011', 'Total']
+total_2012 = yearly_growth.loc['2012', 'Total']
 growth_pct = ((total_2012 - total_2011) / total_2011) * 100
 
 g_col1, g_col2 = st.columns(2)
