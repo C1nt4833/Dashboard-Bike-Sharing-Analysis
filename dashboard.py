@@ -14,14 +14,6 @@ import streamlit as st
 
 st.set_page_config(page_title="Dashboard Analisis Penyewaan Sepeda", layout="wide")
 
-@st.cache_data
-def load_data():
-    df = pd.read_csv("main_data.csv")
-    df['dteday'] = pd.to_datetime(df['dteday'])
-    return df
-
-all_df = load_data()
-
 #Analisis Lanjutan
 def hour_grouping(hour):
     if 5 <= hour < 12:
@@ -32,6 +24,14 @@ def hour_grouping(hour):
         return "Sore"
     else:
         return "Malam"
+        
+@st.cache_data
+def load_data():
+    df = pd.read_csv("main_data.csv")
+    df['dteday'] = pd.to_datetime(df['dteday'])
+    return df
+
+all_df = load_data()
 
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
