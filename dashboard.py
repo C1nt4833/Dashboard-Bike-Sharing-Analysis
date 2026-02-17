@@ -103,22 +103,21 @@ with col_left:
     fig_w, ax_w = plt.subplots(figsize=(10, 6))
     sns.barplot(x="weathersit", y="cnt", data=weather_impact, palette="viridis", ax=ax_w)
     ax_w.set_title("Rata-rata Sewa per Kondisi Cuaca")
+    ax_w.set_xlabel("Kondisi Cuaca (1: Cerah, 2: Mendung, 3: Hujan/Salju, 4: Ekstrem)")
     st.pyplot(fig_w)
 with col_right:
     bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
     if not bad_weather.empty:
         fig_b, ax_b = plt.subplots(figsize=(10, 6))
         sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#e74c3c", ax=ax_b)
-        ax_b.set_title("Frekuensi Cuaca Buruk per Bulan")
+        ax_b.set_title("Frekuensi Cuaca Buruk (Hujan/Salju) per Bulan")
+        ax_b.set_xlabel("Bulan")
+        ax_b.set_ylabel("Jumlah Kejadian")
         st.pyplot(fig_b)
     else:
         st.info("Tidak ada data cuaca buruk pada periode ini.")
 
-# ANALISIS LANJUTAN
-
 st.markdown("---")
-
-# BAGIAN 1: CLUSTERING MANUAL
 st.subheader("Distribusi Penyewaan Berdasarkan Kategori Waktu")
 category_analysis = main_df.groupby('time_category').agg({'cnt': 'mean'}).reindex(
     ['Pagi', 'Siang', 'Sore', 'Malam']
@@ -127,9 +126,10 @@ category_analysis = main_df.groupby('time_category').agg({'cnt': 'mean'}).reinde
 fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
 sns.barplot(x='time_category', y='cnt', data=category_analysis, palette="Blues_d", ax=ax_cat)
 ax_cat.set_title("Rata-rata Penyewaan Berdasarkan Kelompok Waktu")
+ax_cat.set_xlabel("Waktu")
+ax_cat.set_ylabel("Rata-rata Jumlah Sewa")
 st.pyplot(fig_cat)
 
-# BAGIAN 2: GROWTH ANALYSIS
 st.subheader("Performa Pertumbuhan Tahunan")
 yearly_growth = all_df.groupby('yr').agg({'cnt': 'sum', 'casual': 'sum', 'registered': 'sum'})
 yearly_growth.index = ['2011', '2012']
