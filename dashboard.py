@@ -108,11 +108,25 @@ with col_left:
 with col_right:
     bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
     if not bad_weather.empty:
+        month_names = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'Mei', 6: 'Jun',
+            7: 'Jul', 8: 'Agu', 9: 'Sep', 10: 'Okt', 11: 'Nov', 12: 'Des'
+        }
+        bad_weather['mnth'] = bad_weather['mnth'].map(month_names)
         fig_b, ax_b = plt.subplots(figsize=(10, 6))
-        sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#e74c3c", ax=ax_b)
+        sns.barplot(
+            x="mnth", 
+            y="weathersit", 
+            data=bad_weather, 
+            color="#e74c3c", 
+            ax=ax_b,
+            order=['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] # Menjaga urutan tetap Jan-Des
+        )
+        
         ax_b.set_title("Frekuensi Cuaca Buruk (Hujan/Salju) per Bulan")
         ax_b.set_xlabel("Bulan")
         ax_b.set_ylabel("Jumlah Kejadian")
+        sns.despine()
         st.pyplot(fig_b)
     else:
         st.info("Tidak ada data cuaca buruk pada periode ini.")
