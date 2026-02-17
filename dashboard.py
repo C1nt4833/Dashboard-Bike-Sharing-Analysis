@@ -13,6 +13,14 @@ import seaborn as sns
 import streamlit as st
 
 st.set_page_config(page_title="Dashboard Analisis Penyewaan Sepeda", layout="wide")
+       
+@st.cache_data
+def load_data():
+    df = pd.read_csv("main_data.csv")
+    df['dteday'] = pd.to_datetime(df['dteday'])
+    return df
+
+all_df = load_data()
 
 #Analisis Lanjutan
 def hour_grouping(hour):
@@ -25,14 +33,6 @@ def hour_grouping(hour):
     else:
         return "Malam"
         
-@st.cache_data
-def load_data():
-    df = pd.read_csv("main_data.csv")
-    df['dteday'] = pd.to_datetime(df['dteday'])
-    return df
-
-all_df = load_data()
-
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>Bike Sharing Analysis</h2>", unsafe_allow_html=True)
@@ -124,12 +124,18 @@ with col_right:
 
 st.markdown("---")
 st.subheader("Distribusi Penyewaan Berdasarkan Kategori Waktu")
+
 category_analysis = main_df.groupby('time_category').agg({'cnt': 'mean'}).reset_index()
+
 target_order = ['Pagi', 'Siang', 'Sore', 'Malam']
-category_analysis['time_category'] = pd.Categorical(category_analysis['time_category'], categories=target_order, ordered=True)
+category_analysis['time_category'] = pd.Categorical(
+    category_analysis['time_category'], 
+    categories=target_order, 
+    ordered=True
+)
 category_analysis = category_analysis.sort_values('time_category')
 
-if not category_analysis['cnt'].isnull().all():
+if not category_analysis['cnt'].isna().all() and not category_analysis.empty:
     fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
     sns.barplot(
         x='time_category', 
@@ -142,7 +148,14 @@ if not category_analysis['cnt'].isnull().all():
     ax_cat.set_title("Rata-rata Penyewaan Berdasarkan Kelompok Waktu")
     ax_cat.set_xlabel("Waktu")
     ax_cat.set_ylabel("Rata-rata Jumlah Sewa")
+    
+    for p in ax_cat.patches:
+        ax_cat.annotate(f'{p.get_height():.2f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                        ha='center', va='center', xytext=(0, 10), textcoords='offset points')
+    
     st.pyplot(fig_cat)
+else:
+    st.warning("Data tidak ditemukan. Pastikan kolom 'time_category' sudah terisi di data utama.")
 
 st.subheader("Performa Pertumbuhan Tahunan")
 yearly_growth = all_df.groupby('yr').agg({
