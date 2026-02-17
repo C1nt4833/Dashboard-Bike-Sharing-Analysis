@@ -14,98 +14,133 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
-st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
+st.set_page_config(page_title="Bike Sharing Analysis Dashboard", layout="wide")
 
-"""Memuat Data"""
 
 @st.cache_data
 def load_data():
+    # Pastikan file ini ada di root folder repositori GitHub kamu
     df = pd.read_csv("main_data.csv")
     df['dteday'] = pd.to_datetime(df['dteday'])
     return df
 
 all_df = load_data()
 
-"""Sidebar"""
-
+# ==========================================
+# SIDEBAR
+# ==========================================
 with st.sidebar:
-    st.markdown("<h1 style='text-align: center; color: #f39c12;'>🚲 BIKE-SHARE</h1>", unsafe_access_allowed=True)
-    st.markdown("<p style='text-align: center;'><i>Data-Driven Mobility Insights</i></p>", unsafe_access_allowed=True)
+    # Menggunakan HTML untuk styling teks (Fix typo parameter di sini)
+    st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>Bike Sharing Collection</h2>", unsafe_allow_html=True)
     st.markdown("---")
+    
+    min_date = all_df["dteday"].min()
+    max_date = all_df["dteday"].max()
+    
+    try:
+        start_date, end_date = st.date_input(
+            label='Rentang Waktu',
+            min_value=min_date,
+            max_value=max_date,
+            value=[min_date, max_date]
+        )
+    except ValueError:
+        st.error("Silakan pilih rentang waktu yang valid.")
+        st.stop()
 
-    # Deskripsi Dashboard
-    st.title("🚲 Bike Sharing Analytics Dashboard")
-    st.write(
-        """
-        Dashboard ini menyajikan analisis mendalam mengenai perilaku penyewaan sepeda,
-        dampak kondisi cuaca, hingga optimasi jadwal operasional.
-        """
-    )
+# Filter dataframe utama berdasarkan rentang waktu yang dipilih
+main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
+                (all_df["dteday"] <= pd.to_datetime(end_date))]
 
-    st.markdown("---")
-    st.metric(label="Total Records", value=f"{all_df.shape[0]:,}")
-    st.metric(label="Total Rentals", value=f"{all_df['cnt'].sum():,}")
+st.title("Bike Sharing Analysis Dashboard")
+st.markdown("---")
 
-    st.markdown("---")
-    st.caption("Developed by: Cinta Wardana")
 
-"""Pertanyaan 1: PROMO JAM SIBUK"""
+col1, col2, col3 = st.columns(3)
 
-st.subheader("Strategi Promo Konversi Keanggotaan (Jam Sibuk 2012)")
+with col1:
+    total_rentals = main_df.cnt.sum()
+    st.metric("Total Overall Rentals", value=f"{total_rentals:,}")
+
+with col2:
+    total_casual = main_df.casual.sum()
+    st.metric("Total Casual Users", value=f"{total_casual:,}")
+
+with col3:
+    total_registered = main_df.registered.sum()
+    st.metric("Total Registered Users", value=f"{total_registered:,}")
+
+# ==========================================
+# PERTANYAAN 1: TREN JAM SIBUK
+# ==========================================
+st.subheader("Hourly Rental Trends (Peak Hours Analysis)")
 
 rush_hours = [7, 8, 9, 16, 17, 18, 19]
-q1_data = all_df[(all_df["yr"] == 1) & (all_df["workingday"] == 1) & (all_df["hr"].isin(rush_hours))]
-q1_analysis = q1_data.groupby("hr")[["casual", "registered"]].mean()
+q1_data = main_df[(main_df["yr"] == 1) & (main_df["workingday"] == 1) & (main_df["hr"].isin(rush_hours))]
+q1_analysis = q1_data.groupby("hr")[["casual"]].mean().reset_index()
 
-fig1, ax1 = plt.subplots(figsize=(12, 6))
+fig, ax = plt.subplots(figsize=(16, 8))
 sns.lineplot(
     data=q1_analysis,
-    x=q1_analysis.index,
+    x="hr",
     y="casual",
-    marker='o', linewidth=3, color='#f39c12', label="Rata-rata Pengguna Casual", ax=ax1
+    marker='o',
+    linewidth=4,
+    color="#90CAF9", # Biru muda estetik
+    ax=ax
 )
 
-ax1.annotate(
-    'Jam Emas Promo (17:00)',
-    xy=(17, 69.77), xytext=(18, 75),
+
+ax.annotate(
+    'Peak Point (17:00)', 
+    xy=(17, q1_analysis.loc[q1_analysis['hr']==17, 'casual'].values[0]), 
+    xytext=(18, q1_analysis.loc[q1_analysis['hr']==17, 'casual'].values[0] + 5),
     arrowprops=dict(facecolor='black', shrink=0.05),
-    fontsize=12, fontweight='bold', color='#d35400'
+    fontsize=15
 )
 
-ax1.set_title("Tren Pengguna Casual pada Jam Sibuk (Working Day 2012)", fontsize=16)
-ax1.set_xlabel("Jam (Hour)")
-ax1.set_ylabel("Rata-rata Jumlah Pengguna")
-ax1.set_xticks(rush_hours)
-ax1.legend()
-st.pyplot(fig1)
+ax.set_title("Average Casual User Rentals during Rush Hours (2012)", fontsize=25)
+ax.set_xlabel("Hour (24-hour scale)", fontsize=15)
+ax.set_ylabel("Average Rentals", fontsize=15)
+ax.set_xticks(rush_hours)
+st.pyplot(fig)
 
-with st.expander("Lihat Insight Pertanyaan 1"):
-    st.write("Rata-rata pengguna casual mencapai puncaknya pada pukul 17:00. Ini adalah waktu terbaik untuk mengirimkan notifikasi promo.")
 
-"""Pertanyaan 2: DAMPAK CUACA & MAINTENANCE"""
+st.markdown("---")
+st.subheader("Weather & Maintenance Analysis")
 
-st.subheader("Dampak Cuaca & Jadwal Pemeliharaan Sepeda")
+col_left, col_right = st.columns(2)
 
-# Pengolahan Data untuk Q2
-weather_impact = all_df.groupby("weathersit")["cnt"].mean()
-bad_weather_freq = all_df[all_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count()
+with col_left:
+    # Analisis Dampak Cuaca
+    weather_impact = main_df.groupby("weathersit")["cnt"].mean().reset_index()
+    fig_w, ax_w = plt.subplots(figsize=(10, 6))
+    sns.barplot(
+        x="weathersit", 
+        y="cnt", 
+        data=weather_impact, 
+        palette=["#90CAF9", "#D3D3D3", "#F39C12", "#E74C3C"], 
+        ax=ax_w
+    )
+    ax_w.set_title("Average Rentals by Weather Condition", fontsize=15)
+    ax_w.set_xlabel("Weather Situation (1: Clear, 4: Heavy Rain/Snow)")
+    st.pyplot(fig_w)
 
-fig2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(20, 8))
+with col_right:
+    # Frekuensi Cuaca Buruk per Bulan
+    bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
+    fig_b, ax_b = plt.subplots(figsize=(10, 6))
+    sns.barplot(
+        x="mnth", 
+        y="weathersit", 
+        data=bad_weather, 
+        color="#90CAF9", 
+        ax=ax_b
+    )
+    ax_b.set_title("Bad Weather Frequency (Rainy/Snowy) per Month", fontsize=15)
+    ax_b.set_xlabel("Month (1: Jan, 10: Oct)")
+    st.pyplot(fig_b)
 
-# Grafik Kiri
-colors_weather = ["#2ecc71", "#95a5a6", "#e74c3c", "#c0392b"]
-sns.barplot(x=weather_impact.index, y=weather_impact.values, palette=colors_weather, ax=ax2[0])
-ax2[0].set_title("Dampak Kondisi Cuaca terhadap Total Penyewaan", fontsize=18)
-ax2[0].set_xlabel("Kondisi Cuaca (1: Cerah, 3: Hujan/Salju)")
-
-# Grafik Kanan
-sns.barplot(x=bad_weather_freq.index, y=bad_weather_freq.values, color='#3498db', ax=ax2[1])
-ax2[1].set_title("Frekuensi Cuaca Buruk (Hujan/Salju) per Bulan", fontsize=18)
-ax2[1].set_xlabel("Bulan")
-
-st.pyplot(fig2)
-
-with st.expander("Lihat Insight Pertanyaan 2"):
-    st.write("Cuaca buruk menurunkan penyewaan sebesar 45.57%. Frekuensi cuaca buruk tertinggi di bulan Oktober (10), menjadikannya waktu ideal untuk maintenance.")
-
-st.caption("Copyright (c) 2024 - Bike Sharing Analysis Project")
+st.markdown("---")
+st.caption('Copyright (C) 2024 - Bike Sharing Analytics Project | Created by: [Cinta Wardana]')
