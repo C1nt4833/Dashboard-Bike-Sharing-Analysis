@@ -13,114 +13,154 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
+# Konfigurasi halaman
 st.set_page_config(page_title="Bike Sharing Analysis Dashboard", layout="wide")
 
+# ==========================================
+# FUNGSI PEMBANTU (ANALISIS LANJUTAN)
+# ==========================================
+def hour_grouping(hour):
+    if 5 <= hour < 12:
+        return "Pagi (Morning)"
+    elif 12 <= hour < 17:
+        return "Siang (Afternoon)"
+    elif 17 <= hour < 21:
+        return "Sore (Evening)"
+    else:
+        return "Malam (Night)"
+
+# ==========================================
+# LOAD DATA
+# ==========================================
 @st.cache_data
 def load_data():
     df = pd.read_csv("main_data.csv")
     df['dteday'] = pd.to_datetime(df['dteday'])
+    # Menerapkan Clustering Manual (Binning) pada saat load data
+    df['time_category'] = df['hr'].apply(hour_grouping)
     return df
 
 all_df = load_data()
 
+# ==========================================
+# SIDEBAR
+# ==========================================
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center;'>Bike Sharing Collection</h2>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown("<h2 style='text-align: center;'>Bike Sharing Analysis</h2>", unsafe_allow_html=True)
+    
+    st.info("💡 **Catatan:** Dataset ini adalah data historis tahun **2011 - 2012**. Mohon pilih rentang tanggal dalam periode tersebut.")
     
     min_date = all_df["dteday"].min()
     max_date = all_df["dteday"].max()
     
-    try:
-        date_range = st.date_input(
-            label='Rentang Waktu',
-            min_value=min_date,
-            max_value=max_date,
-            value=[min_date, max_date]
-        )
-        if len(date_range) == 2:
-            start_date, end_date = date_range
-        else:
-            start_date = end_date = date_range[0]
-            
-    except Exception as e:
-        st.error(f"Pilih rentang tanggal: {e}")
-        st.stop()
-        
-main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
-                (all_df["dteday"] <= pd.to_datetime(end_date))]
+    date_range = st.date_input(
+        label='Rentang Waktu Analisis',
+        min_value=min_date,
+        max_value=max_date,
+        value=[min_date, max_date]
+    )
 
-st.title("Bike Sharing Analysis Dashboard ")
-st.markdown(f"Menampilkan data dari: **{start_date}** hingga **{end_date}**")
+# Filter Data Utama
+if isinstance(date_range, list) and len(date_range) == 2:
+    start_date, end_date = date_range
+    main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
+                    (all_df["dteday"] <= pd.to_datetime(end_date))]
+else:
+    main_df = all_df
+
+# ==========================================
+# HEADER & METRIK UTAMA
+# ==========================================
+st.title("Bike Sharing Analytics Dashboard ✨")
+st.markdown(f"Periode Analisis: **{start_date}** hingga **{end_date}**")
 st.markdown("---")
 
 col1, col2, col3 = st.columns(3)
-
 with col1:
-    total_rentals = main_df.cnt.sum()
-    st.metric("Total Seluruh Penyewaan", value=f"{total_rentals:,}")
-
+    st.metric("Total Penyewaan", value=f"{main_df.cnt.sum():,}")
 with col2:
-    total_casual = main_df.casual.sum()
-    st.metric("Pengguna Casual (Non-Member)", value=f"{total_casual:,}")
-
+    st.metric("Pengguna Casual", value=f"{main_df.casual.sum():,}")
 with col3:
-    total_registered = main_df.registered.sum()
-    st.metric("Pengguna Terdaftar (Member)", value=f"{total_registered:,}")
+    st.metric("Pengguna Terdaftar", value=f"{main_df.registered.sum():,}")
 
-st.subheader("Tren Penyewaan pada Jam Sibuk (Hari Kerja)")
+# ==========================================
+# VISUALISASI PERTANYAAN BISNIS
+# ==========================================
+st.subheader("1. Tren Penyewaan pada Jam Sibuk (Hari Kerja)")
 q1_data = main_df[main_df["workingday"] == 1]
-
 if not q1_data.empty:
     q1_analysis = q1_data.groupby("hr")[["casual", "registered"]].mean().reset_index()
-
     fig, ax = plt.subplots(figsize=(16, 8))
-    sns.lineplot(data=q1_analysis, x="hr", y="casual", marker='o', linewidth=3, color="#90CAF9", label="Casual", ax=ax)
-    sns.lineplot(data=q1_analysis, x="hr", y="registered", marker='o', linewidth=3, color="#D3D3D3", label="Member", ax=ax)
-
-    ax.set_title("Rata-rata Penyewaan per Jam", fontsize=20)
-    ax.set_xlabel("Jam (00 - 23))")
-    ax.set_ylabel("Rata-rata Jumlah Sepeda")
+    sns.lineplot(data=q1_analysis, x="hr", y="casual", marker='o', color="#f39c12", label="Casual", ax=ax)
+    sns.lineplot(data=q1_analysis, x="hr", y="registered", marker='o', color="#3498db", label="Terdaftar", ax=ax)
     ax.set_xticks(range(0, 24))
-    ax.legend()
-    ax.grid(True, linestyle='--', alpha=0.6)
     st.pyplot(fig)
-else:
-    st.warning("Tidak ada data 'Working Day' pada rentang tanggal yang dipilih.")
 
 st.markdown("---")
-st.subheader("Dampak Cuaca & Frekuensi Cuaca Buruk")
-
+st.subheader("2. Dampak Cuaca & Frekuensi Cuaca Buruk")
 col_left, col_right = st.columns(2)
-
 with col_left:
     weather_impact = main_df.groupby("weathersit")["cnt"].mean().reset_index()
-    
     fig_w, ax_w = plt.subplots(figsize=(10, 6))
-    sns.barplot(
-        x="weathersit", 
-        y="cnt", 
-        data=weather_impact, 
-        palette=["#90CAF9", "#D3D3D3", "#F39C12", "#E74C3C"], 
-        ax=ax_w
-    )
-    ax_w.set_title("Rata-rata Penyewaan Berdasarkan Cuaca", fontsize=15)
-    ax_w.set_xlabel("Kondisi Cuaca (1: Cerah, 4: Buruk)")
-    ax_w.set_ylabel("Rata-rata total Sewa")
+    sns.barplot(x="weathersit", y="cnt", data=weather_impact, palette="viridis", ax=ax_w)
+    ax_w.set_title("Rata-rata Penyewaan per Kondisi Cuaca")
     st.pyplot(fig_w)
-
 with col_right:
     bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
-    
     if not bad_weather.empty:
         fig_b, ax_b = plt.subplots(figsize=(10, 6))
-        sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#90CAF9", ax=ax_b)
-        ax_b.set_title("Frekuensi Cuaca Buruk per Bulan", fontsize=15)
-        ax_b.set_xlabel("Bulan")
-        ax_b.set_ylabel("Jumlah Kejadian Cuaca Buruk")
+        sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#e74c3c", ax=ax_b)
+        ax_b.set_title("Jumlah Kejadian Cuaca Buruk per Bulan")
         st.pyplot(fig_b)
-    else:
-        st.info("Tidak ada cuaca buruk terdeteksi pada rentang tanggal ini.")
+
+# ==========================================
+# ANALISIS LANJUTAN (SESUAI REQUES)
+# ==========================================
+st.markdown("---")
+st.header("🔍 Analisis Lanjutan (Advanced Analysis)")
+
+# BAGIAN 1: CLUSTERING MANUAL (BINNING)
+st.subheader("Distribusi per Kategori Waktu")
+category_analysis = main_df.groupby('time_category').agg({
+    'cnt': 'mean'
+}).reindex(['Pagi (Morning)', 'Siang (Afternoon)', 'Sore (Evening)', 'Malam (Night)']).reset_index()
+
+fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
+sns.barplot(x='time_category', y='cnt', data=category_analysis, palette="Blues_d", ax=ax_cat)
+ax_cat.set_title("Rata-rata Penyewaan Berdasarkan Kelompok Waktu")
+ax_cat.set_ylabel("Rata-rata Jumlah Sepeda")
+st.pyplot(fig_cat)
+
+with st.expander("Penjelasan Clustering"):
+    st.write("Data jam (0-23) dikelompokkan secara manual (Binning) menjadi 4 kategori: Pagi (05-11), Siang (12-16), Sore (17-20), dan Malam (21-04). Teknik ini membantu bisnis memahami perilaku pelanggan di blok waktu tertentu tanpa perlu melihat detail per jam.")
+
+# BAGIAN 2: GROWTH ANALYSIS
+st.subheader("B. Analisis Pertumbuhan (Growth Analysis) 2011 vs 2012")
+
+# Menghitung data tahunan
+yearly_growth = all_df.groupby('yr').agg({
+    'cnt': 'sum',
+    'casual': 'sum',
+    'registered': 'sum'
+})
+yearly_growth.index = ['2011', '2012']
+
+# Menghitung Persentase Pertumbuhan
+total_2011 = yearly_growth.loc['2011', 'cnt']
+total_2012 = yearly_growth.loc['2012', 'cnt']
+growth_pct = ((total_2012 - total_2011) / total_2011) * 100
+
+g_col1, g_col2 = st.columns(2)
+with g_col1:
+    st.write("**Statistik Tahunan:**")
+    st.dataframe(yearly_growth.style.format("{:,}"))
+
+with g_col2:
+    st.metric(label="Pertumbuhan Total Penyewaan", 
+              value=f"{total_2012 - total_2011:,}", 
+              delta=f"{growth_pct:.2f}% YoY")
+    st.write("*Year-over-Year (YoY) Growth* menunjukkan peningkatan penggunaan yang sangat signifikan dari tahun pertama ke tahun kedua.")
 
 st.markdown("---")
-st.caption('Copyright (C) 2024 - Bike Sharing Analytics Dashboard')
+st.caption('Copyright (C) 2024 - Bike Sharing Analysis Project')
