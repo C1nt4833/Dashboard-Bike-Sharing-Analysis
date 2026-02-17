@@ -16,21 +16,16 @@ import streamlit as st
 
 st.set_page_config(page_title="Bike Sharing Analysis Dashboard", layout="wide")
 
-
 @st.cache_data
 def load_data():
-    # Pastikan file ini ada di root folder repositori GitHub kamu
+    # Pastikan file ini ada di folder yang sama dengan dashboard.py
     df = pd.read_csv("main_data.csv")
     df['dteday'] = pd.to_datetime(df['dteday'])
     return df
 
 all_df = load_data()
 
-# ==========================================
-# SIDEBAR
-# ==========================================
 with st.sidebar:
-    # Menggunakan HTML untuk styling teks (Fix typo parameter di sini)
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>Bike Sharing Collection</h2>", unsafe_allow_html=True)
     st.markdown("---")
@@ -39,23 +34,27 @@ with st.sidebar:
     max_date = all_df["dteday"].max()
     
     try:
-        start_date, end_date = st.date_input(
+        date_range = st.date_input(
             label='Rentang Waktu',
             min_value=min_date,
             max_value=max_date,
             value=[min_date, max_date]
         )
-    except ValueError:
-        st.error("Silakan pilih rentang waktu yang valid.")
+        if len(date_range) == 2:
+            start_date, end_date = date_range
+        else:
+            start_date = end_date = date_range[0]
+            
+    except Exception as e:
+        st.error(f"Pilih rentang tanggal: {e}")
         st.stop()
-
-# Filter dataframe utama berdasarkan rentang waktu yang dipilih
+        
 main_df = all_df[(all_df["dteday"] >= pd.to_datetime(start_date)) & 
                 (all_df["dteday"] <= pd.to_datetime(end_date))]
 
-st.title("Bike Sharing Analysis Dashboard")
+st.title("Bike Sharing Analysis Dashboard ")
+st.markdown(f"Menampilkan data dari: **{start_date}** hingga **{end_date}**")
 st.markdown("---")
-
 
 col1, col2, col3 = st.columns(3)
 
@@ -71,41 +70,27 @@ with col3:
     total_registered = main_df.registered.sum()
     st.metric("Total Registered Users", value=f"{total_registered:,}")
 
-# ==========================================
-# PERTANYAAN 1: TREN JAM SIBUK
-# ==========================================
 st.subheader("Hourly Rental Trends (Peak Hours Analysis)")
+q1_data = main_df[main_df["workingday"] == 1]
 
-rush_hours = [7, 8, 9, 16, 17, 18, 19]
-q1_data = main_df[(main_df["yr"] == 1) & (main_df["workingday"] == 1) & (main_df["hr"].isin(rush_hours))]
-q1_analysis = q1_data.groupby("hr")[["casual"]].mean().reset_index()
+if not q1_data.empty:
+    q1_analysis = q1_data.groupby("hr")[["casual", "registered"]].mean().reset_index()
 
-fig, ax = plt.subplots(figsize=(16, 8))
-sns.lineplot(
-    data=q1_analysis,
-    x="hr",
-    y="casual",
-    marker='o',
-    linewidth=4,
-    color="#90CAF9", # Biru muda estetik
-    ax=ax
-)
+    fig, ax = plt.subplots(figsize=(16, 8))
+    # Line chart Casual
+    sns.lineplot(data=q1_analysis, x="hr", y="casual", marker='o', linewidth=3, color="#90CAF9", label="Casual", ax=ax)
+    # Line chart Registered
+    sns.lineplot(data=q1_analysis, x="hr", y="registered", marker='o', linewidth=3, color="#D3D3D3", label="Registered", ax=ax)
 
-
-ax.annotate(
-    'Peak Point (17:00)', 
-    xy=(17, q1_analysis.loc[q1_analysis['hr']==17, 'casual'].values[0]), 
-    xytext=(18, q1_analysis.loc[q1_analysis['hr']==17, 'casual'].values[0] + 5),
-    arrowprops=dict(facecolor='black', shrink=0.05),
-    fontsize=15
-)
-
-ax.set_title("Average Casual User Rentals during Rush Hours (2012)", fontsize=25)
-ax.set_xlabel("Hour (24-hour scale)", fontsize=15)
-ax.set_ylabel("Average Rentals", fontsize=15)
-ax.set_xticks(rush_hours)
-st.pyplot(fig)
-
+    ax.set_title("Average Rentals on Working Days (Filtered by Date Range)", fontsize=20)
+    ax.set_xlabel("Hour (24-hour scale)")
+    ax.set_ylabel("Average Rentals")
+    ax.set_xticks(range(0, 24))
+    ax.legend()
+    ax.grid(True, linestyle='--', alpha=0.6)
+    st.pyplot(fig)
+else:
+    st.warning("Tidak ada data 'Working Day' pada rentang tanggal yang dipilih.")
 
 st.markdown("---")
 st.subheader("Weather & Maintenance Analysis")
@@ -113,8 +98,8 @@ st.subheader("Weather & Maintenance Analysis")
 col_left, col_right = st.columns(2)
 
 with col_left:
-    # Analisis Dampak Cuaca
     weather_impact = main_df.groupby("weathersit")["cnt"].mean().reset_index()
+    
     fig_w, ax_w = plt.subplots(figsize=(10, 6))
     sns.barplot(
         x="weathersit", 
@@ -123,24 +108,23 @@ with col_left:
         palette=["#90CAF9", "#D3D3D3", "#F39C12", "#E74C3C"], 
         ax=ax_w
     )
-    ax_w.set_title("Average Rentals by Weather Condition", fontsize=15)
-    ax_w.set_xlabel("Weather Situation (1: Clear, 4: Heavy Rain/Snow)")
+    ax_w.set_title("Avg Rentals by Weather Condition", fontsize=15)
+    ax_w.set_xlabel("Weather Condition (1: Clear, 4: Heavy Rain/Snow)")
+    ax_w.set_ylabel("Average Total Rentals")
     st.pyplot(fig_w)
 
 with col_right:
-    # Frekuensi Cuaca Buruk per Bulan
     bad_weather = main_df[main_df["weathersit"].isin([3, 4])].groupby("mnth")["weathersit"].count().reset_index()
-    fig_b, ax_b = plt.subplots(figsize=(10, 6))
-    sns.barplot(
-        x="mnth", 
-        y="weathersit", 
-        data=bad_weather, 
-        color="#90CAF9", 
-        ax=ax_b
-    )
-    ax_b.set_title("Bad Weather Frequency (Rainy/Snowy) per Month", fontsize=15)
-    ax_b.set_xlabel("Month (1: Jan, 10: Oct)")
-    st.pyplot(fig_b)
+    
+    if not bad_weather.empty:
+        fig_b, ax_b = plt.subplots(figsize=(10, 6))
+        sns.barplot(x="mnth", y="weathersit", data=bad_weather, color="#90CAF9", ax=ax_b)
+        ax_b.set_title("Frequency of Bad Weather per Month", fontsize=15)
+        ax_b.set_xlabel("Month")
+        ax_b.set_ylabel("Number of Bad Weather Events")
+        st.pyplot(fig_b)
+    else:
+        st.info("Tidak ada cuaca buruk terdeteksi pada rentang tanggal ini.")
 
 st.markdown("---")
-st.caption('Copyright (C) 2024 - Bike Sharing Analytics Project | Created by: [Cinta Wardana]')
+st.caption('Copyright (C) 2024 - Bike Sharing Analytics Dashboard')
