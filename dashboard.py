@@ -88,6 +88,9 @@ if not q1_data.empty:
     sns.lineplot(data=q1_analysis, x="hr", y="registered", marker='o', color="#3498db", label="Terdaftar", ax=ax)
     ax.set_xticks(range(0, 24))
     ax.set_title("Rata-rata Penyewaan per Jam (Hari Kerja)")
+    ax.set_xlabel("Jam")
+    ax.set_ylabel("Rata-rata Penyewaan")
+    
     st.pyplot(fig)
 else:
     st.warning("Tidak ada data 'Hari Kerja' pada rentang tanggal ini.")
