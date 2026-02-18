@@ -41,7 +41,6 @@ with st.sidebar:
     st.info("💡 **Catatan:** Dataset ini adalah data historis tahun **2011 - 2012**.")
     st.markdown("---")
 
-    # Ambil nilai min dan max date dari dataframe
     min_date = all_df["dteday"].min().date()
     max_date = all_df["dteday"].max().date()
 
@@ -50,7 +49,7 @@ with st.sidebar:
         min_value=min_date,
         max_value=max_date,
         value=[min_date, max_date],
-        format="YYYY/MM/DD" # Memperbaiki masalah input manual agar angka tidak tertukar
+        format="YYYY/MM/DD" 
     )
 
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
