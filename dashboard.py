@@ -12,10 +12,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
-# Konfigurasi halaman
 st.set_page_config(page_title="Dashboard Analisis Penyewaan Sepeda", layout="wide")
 
-# 1. LOAD DATA (Diletakkan di awal)
 @st.cache_data
 def load_data():
     df = pd.read_csv("main_data.csv")
@@ -24,7 +22,7 @@ def load_data():
 
 all_df = load_data()
 
-# 2. DEFINISI FUNGSI (Diletakkan di awal)
+
 def hour_grouping(hour):
     if 5 <= hour < 12:
         return "Pagi"  
@@ -35,7 +33,7 @@ def hour_grouping(hour):
     else:
         return "Malam"
 
-# 3. SIDEBAR (Tempat mengambil input user)
+#SIDEBAR
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🚲</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>Bike Sharing Analysis</h2>", unsafe_allow_html=True)
@@ -55,7 +53,6 @@ with st.sidebar:
         format="YYYY/MM/DD" # Memperbaiki masalah input manual agar angka tidak tertukar
     )
 
-# 4. LOGIKA FILTER & DEFINISI main_df (PENTING: Harus sebelum main_df digunakan)
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
     start_date, end_date = date_range
 elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
@@ -63,15 +60,13 @@ elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
 else:
     start_date = end_date = date_range
 
-# Membuat main_df dengan filter tanggal
 main_df = all_df[(all_df["dteday"].dt.date >= start_date) & 
                  (all_df["dteday"].dt.date <= end_date)].copy()
 
-# Baru kemudian menerapkan fungsi grouping ke main_df yang sudah ada
 main_df['time_category'] = main_df['hr'].apply(hour_grouping)
 
-# 5. TAMPILAN DASHBOARD UTAMA
-st.title("Bike Sharing Analytics Dashboard ✨")
+#TAMPILAN DASHBOARD UTAMA
+st.title("Bike Sharing Analytics Dashboard")
 st.markdown(f"Periode Analisis: **{start_date}** hingga **{end_date}**")
 st.markdown("---")
 
