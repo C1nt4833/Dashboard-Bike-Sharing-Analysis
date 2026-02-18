@@ -106,6 +106,10 @@ with col_left:
     ax_w.set_title("Rata-rata Sewa per Kondisi Cuaca")
     ax_w.set_xlabel("Kondisi Cuaca (1: Cerah, 2: Mendung, 3: Hujan/Salju, 4: Ekstrem)")
     ax_w.set_ylabel("Rata-Rata Jumlah Sewa")
+    for p in ax_w.patches:
+        ax_w.annotate(f'{p.get_height():.2f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                        ha='center', va='center', xytext=(0, 10), textcoords='offset points')
+    
     st.pyplot(fig_w)
 
 with col_right:
@@ -120,6 +124,10 @@ with col_right:
         ax_b.set_title("Frekuensi Cuaca Buruk (Hujan/Salju) per Bulan")
         ax_b.set_xlabel("Bulan")
         ax_b.set_ylabel("Jumlah Kejadian")
+        for p in ax_b.patches:
+            ax_b.annotate(f'{int(p.get_height())}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                            ha='center', va='center', xytext=(0, 10), textcoords='offset points')
+            
         st.pyplot(fig_b)
     else:
         st.info("Tidak ada data cuaca buruk pada periode ini.")
